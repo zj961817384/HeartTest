@@ -274,7 +274,7 @@
     }
     
 //    self.heartView.minValue = minValue;
-    
+    //
     [self.specialArray insertObject:[NSNumber numberWithInteger:_currentSpecialValue] atIndex:0];
 //    [self.specialArray removeLastObject];
     
