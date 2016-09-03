@@ -11,5 +11,7 @@
 @interface HeartView : UIView
 
 @property (nonatomic, strong) NSArray<NSNumber *> *pointArray;
+@property (nonatomic, assign) CGFloat maxValue;
+@property (nonatomic, assign) CGFloat minValue;
 
 @end

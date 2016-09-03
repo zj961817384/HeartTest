@@ -266,9 +266,18 @@
 
 - (void)setCurrentSpecialValue:(CGFloat)currentSpecialValue {
     NSLog(@"%f,", currentSpecialValue);
-    _currentSpecialValue = (currentSpecialValue - 180) * 100;
+    static CGFloat minValue = 300;
+    _currentSpecialValue = (currentSpecialValue - ((int)currentSpecialValue / 10) * 10) * 10;
+    NSLog(@"%f,", _currentSpecialValue);
+    if (_currentSpecialValue < minValue) {
+        minValue = _currentSpecialValue;
+    }
     
-    [self.specialArray insertObject:[NSNumber numberWithInteger:currentSpecialValue] atIndex:0];
+//    self.heartView.minValue = minValue;
+    
+    [self.specialArray insertObject:[NSNumber numberWithInteger:_currentSpecialValue] atIndex:0];
+//    [self.specialArray removeLastObject];
+    
     self.heartView.pointArray = _specialArray;
 //    [self.heartView setNeedsDisplay];
     if (self.timer == nil) {
