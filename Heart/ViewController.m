@@ -43,7 +43,7 @@
     // Do any additional setup after loading the view, typically from a nib.
     
     self.imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
-    self.imageLayer = _imageView.layer;
+    self.imageLayer = _imageView.layer;//没用到这个东西
     _imageView.userInteractionEnabled = YES;
     
     [self.view addSubview:_imageView];
@@ -53,11 +53,12 @@
     
     [self createSubview];
     
-    
+	
+	//创建闪光灯控制按钮
     self.flashLight = [UIButton buttonWithType:UIButtonTypeCustom];
     self.flashLight.frame = CGRectMake(30, 30, 20, 20);
     [self.flashLight setBackgroundColor:[UIColor blackColor]];
-    self.flashLight.layer.cornerRadius = 5;
+//    self.flashLight.layer.cornerRadius = 5;
     [self.flashLight addTarget:self action:@selector(lightButton:) forControlEvents:UIControlEventTouchUpInside];
     
     [_imageView addSubview:_flashLight];
@@ -69,35 +70,44 @@
     [self setupDevice];
 
     self.heartView = [[HeartView alloc] initWithFrame:CGRectMake(0, 100, [UIScreen mainScreen].bounds.size.width, 300)];
+	_heartView.layer.borderWidth = 1;
+	_heartView.layer.borderColor = [UIColor blackColor].CGColor;
     [_heartView setBackgroundColor:[UIColor clearColor]];
     [self.view addSubview:_heartView];
 
 }
 
 - (void)setupDevice {
+	//创建一个采集session会话
     self.captureSession = [[AVCaptureSession alloc] init];
-    
+	
+	//开始配置
     [_captureSession beginConfiguration];
-    
+	
+	//是否能用预设值来设置session
     if([_captureSession canSetSessionPreset:AVCaptureSessionPreset640x480]){
         [_captureSession setSessionPreset:AVCaptureSessionPreset640x480];
     }
-    
+    //根据参数 获取摄像头
     self.device = [self getCameraDeviceWithPosition:AVCaptureDevicePositionBack];
     if (_device == nil) {
-        //        NSAssert(device == nil, @"没有可用设备");
+		NSAssert(_device == nil, @"没有可用设备");
         NSLog(@"没有可用设备");
         return;
     }
-    
+    //设备是否支持  闪光灯
     if([_device isTorchModeSupported:AVCaptureTorchModeOff]){
         NSError *error = nil;
-        
+		
+       //锁住设置，不让他在这之间变化状态，以免修改闪光灯状态出现 异常
         [_device lockForConfiguration:&error];
         if (error) {
             return;
         }
+		//关闭闪光灯
         [_device setTorchMode:AVCaptureTorchModeOff];
+		
+		//闪光灯状态改变完成，解锁设置
         [_device unlockForConfiguration];
     }
     
@@ -117,6 +127,7 @@
     [videoDataOutput setVideoSettings:rgbOutputSetting];//设置像素输出格式
     [videoDataOutput setAlwaysDiscardsLateVideoFrames:YES];//抛弃延迟的帧
     dispatch_queue_t videoDataOutputQueue = dispatch_queue_create("VideoDataOutputQueue", DISPATCH_QUEUE_SERIAL);
+	//设置数据输出代理代理
     [videoDataOutput setSampleBufferDelegate:self queue:videoDataOutputQueue];
     if ([_captureSession canAddOutput:videoDataOutput]) {
         [_captureSession addOutput:videoDataOutput];
@@ -139,6 +150,7 @@
 
 - (AVCaptureDevice *)getCameraDeviceWithPosition:(AVCaptureDevicePosition) position {
     NSArray *deviceArray = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+	
     for (AVCaptureDevice *device in deviceArray) {
         if (device.position == position) {
             return device;
@@ -189,8 +201,7 @@
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     
     // Create a bitmap graphics context with the sample buffer data
-    CGContextRef context = CGBitmapContextCreate(baseAddress, width, height, 8,
-                                                 bytesPerRow, colorSpace, kCGBitmapByteOrder32Little | kCGImageAlphaPremultipliedFirst);
+    CGContextRef context = CGBitmapContextCreate(baseAddress, width, height, 8, bytesPerRow, colorSpace, kCGBitmapByteOrder32Little | kCGImageAlphaPremultipliedFirst);
     // Create a Quartz image from the pixel data in the bitmap graphics context
     CGImageRef quartzImage = CGBitmapContextCreateImage(context);
     
@@ -266,9 +277,18 @@
 
 - (void)setCurrentSpecialValue:(CGFloat)currentSpecialValue {
     NSLog(@"%f,", currentSpecialValue);
-    _currentSpecialValue = (currentSpecialValue - 180) * 100;
+    static CGFloat minValue = 300;
+    _currentSpecialValue = (currentSpecialValue - ((int)currentSpecialValue / 10) * 10) * 10;
+    NSLog(@"%f,", _currentSpecialValue);
+    if (_currentSpecialValue < minValue) {
+        minValue = _currentSpecialValue;
+    }
     
-    [self.specialArray insertObject:[NSNumber numberWithInteger:currentSpecialValue] atIndex:0];
+//    self.heartView.minValue = minValue;
+    //
+    [self.specialArray insertObject:[NSNumber numberWithInteger:_currentSpecialValue] atIndex:0];
+//    [self.specialArray removeLastObject];
+    
     self.heartView.pointArray = _specialArray;
 //    [self.heartView setNeedsDisplay];
     if (self.timer == nil) {
